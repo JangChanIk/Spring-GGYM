@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%date {{%level}} [%logger{36}:%line] = %msg%n</pattern>
+        </encoder>
+    </appender>
+    <logger name="jdbc" level="OFF"/>
+    <logger name="jdbc.sqlonly" level="OFF"/>
+    <logger name="jdbc.sqltiming" level="DEBUG"/>
+    <logger name="jdbc.audit" level="OFF"/>
+    <logger name="jdbc.resultset" level="OFF"/>
+    <logger name="jdbc.resultsettable" level="DEBUG"/>
+    <logger name="jdbc.connection" level="OFF"/>
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
+
+<!-- 
+	환경설정시 xml문서를 활용하면 컴파일 과정을 거치지 않으므로 버전관리에 유리하다.
+
+	%date {{%level}} [%thread] %logger{10} [%file : %line] = %msg%n
+
+	%d{HH:MM:ss.SSS} [%thread] %-5level %logger{36} = %msg%n
+
+ -->

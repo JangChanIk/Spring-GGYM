@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kh.phoenix.pass"> 
+
+
+	
+	<select id="myPassList" parameterType="map" resultType="map">
+		SELECT 
+			MIN(PASS_NO) AS PASS_NO, MIN(PASS_EDAY), MIN(MEM_NAME) AS MEM_NAME
+		FROM 
+            PASS a
+            LEFT JOIN MEMBER b ON (a.MEM_NO = b.MEM_NO)
+		WHERE 
+			PASS_STATUS > -1
+			<if test="MEM_EMAIL != NULL">AND MEM_EMAIL=#{MEM_EMAIL}</if>
+			<if test="PASS_TYPE != NULL">AND PASS_TYPE=#{PASS_TYPE}</if>
+			AND SYSDATE BETWEEN TO_DATE(PASS_SDAY) 
+                   			AND TO_DATE(PASS_EDAY)
+	</select>
+	
+	
+	
+	<select id="attendDetail" parameterType="map" resultType="map">
+        SELECT 
+            NVL(MAX(ATTD_NO),0) as RESULT
+        FROM 
+            ATTEND
+        WHERE 
+            ATTD_DATE LIKE TO_CHAR(SYSDATE, 'YYYY-MM-DD%')
+            AND PASS_NO = #{PASS_NO}
+	</select>
+	
+	
+	<insert id="attendInsert" parameterType="map"> <!-- 매장 상품 등록 -->
+		INSERT INTO ATTEND
+		    (ATTD_NO , PASS_NO)
+		VALUES
+		    ((SELECT NVL(MAX(ATTD_NO), 0) + 1 FROM ATTEND a
+					LEFT JOIN PASS b ON (a.PASS_NO = b.PASS_NO)
+					WHERE a.PASS_NO = #{PASS_NO}), #{PASS_NO})    
+	</insert>
+	
+	
+	
+	<update id="passFrozen">
+		UPDATE PASS
+			SET PASS_STATUS = -1
+			WHERE PASS_STATUS > -1
+			<![CDATA[ AND TO_DATE(PASS_EDAY) < SYSDATE ]]>
+	</update>
+	
+	
+	
+	
+	
+</mapper>

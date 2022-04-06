@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kh.phoenix.orders">
+	<!-- 매장 상품 관련[PRODUCT] -->
+	
+	
+	<select id="prodList" parameterType="list" resultType="map">
+		SELECT * FROM PRODUCT WHERE
+		<foreach collection="list" item="item" open="(" close=")" separator="or">
+			PROD_NO=#{item.PROD_NO}
+		</foreach>
+	</select>
+	
+	
+	
+	
+	<select id="productList" parameterType="map" resultType="map">
+		SELECT * FROM PRODUCT WHERE PROD_STATUS != -1
+	</select>
+	
+
+	
+	<insert id="productInsert" parameterType="map"> <!-- 매장 상품 등록 -->
+		INSERT INTO PRODUCT
+		    (PROD_NO, PROD_NAME, PROD_PRICE, PROD_AMOUNT, PROD_TYPE)
+		VALUES
+		    (PRODUCT_SEQ.NEXTVAL, #{PROD_NAME},#{PROD_PRICE},#{PROD_AMOUNT},#{PROD_TYPE})    
+	</insert>
+	
+	
+	
+	 <update id="productUpdate" parameterType="map"> <!-- 매장 상품 수정 -->
+		UPDATE PRODUCT
+			<set>
+				<if test="PROD_NAME != NULL">PROD_NAME=#{PROD_NAME},</if>
+				<if test="PROD_PRICE != NULL">PROD_PRICE=#{PROD_PRICE},</if>
+				<if test="PROD_STATUS != NULL">PROD_STATUS=#{PROD_STATUS},</if>
+			</set>
+		WHERE PROD_NO = #{PROD_NO}
+	</update> 
+	
+	
+	<select id="payNo" resultType="int">
+		SELECT PAY_SEQ.NEXTVAL FROM DUAL
+	</select>
+	
+	
+	
+	<insert id="ordersInsert" parameterType="list">
+		INSERT INTO ORDERS(ORDER_NO, MEM_NO, PROD_NO, ORDER_TID)
+		SELECT ORDERS_SEQ.NEXTVAL, A.* FROM(
+		<foreach item="item" collection="list" separator="UNION ALL ">
+			select 
+				#{item.MEM_NO} AS MEM_NO,
+				#{item.PROD_NO} AS PROD_NO,
+				#{item.TID} AS ORDER_TID
+			from dual
+		</foreach>
+		) A
+	</insert>
+	
+	
+	<select id="ordersList" parameterType="map" resultType="map">
+		SELECT
+			*
+		FROM
+			ORDERS
+		<trim prefix="WHERE" prefixOverrides="AND">
+			<choose>
+				<when test="TID!=null">
+					AND ORDER_TID = #{TID}
+				</when>
+				<when test="ORDER_NO!=null">
+					AND ORDER_NO = #{ORDER_NO}
+				</when>
+			</choose>
+		</trim>
+	</select>
+	
+	
+	<select id="ordersProdList" parameterType="map" resultType="map">
+		SELECT 
+		    MEM_NO, ORDER_NO, ORDER_TID, a.PROD_NO, PROD_PRICE, PROD_AMOUNT, PROD_TYPE
+		FROM
+		    ORDERS a LEFT JOIN PRODUCT b ON (a.PROD_NO=b.PROD_NO)
+		WHERE 
+		    ORDER_TID = (SELECT ORDER_TID FROM ORDERS WHERE ORDER_NO = #{ORDER_NO})
+	</select>
+	
+	
+	
+	<update id="ordersUpdate" parameterType="map">
+		UPDATE 
+			ORDERS
+		SET
+			ORDER_STATUS = 1
+		WHERE
+			ORDER_TID = #{tid}
+	</update>
+
+	
+
+	
+	
+	
+	
+	<select id="payList" parameterType="map" resultType="map">
+		SELECT 
+			PROD_NAME, PASS_CNT, PASS_SDAY, PASS_EDAY, b.MEM_NO, PAY_NO, a.ORDER_NO, PAY_PRICE, PAY_DATE, PASS_NO, PASS_TYPE, PASS_STATUS
+		FROM 
+            PAY a 
+            LEFT JOIN ORDERS b ON (a.ORDER_NO = b.ORDER_NO) 
+            LEFT JOIN PASS c ON (a.ORDER_NO = c.ORDER_NO)
+            LEFT JOIN PRODUCT d on (d.PROD_NO = b.PROD_NO)
+		WHERE 
+			ORDER_STATUS = 1 
+			<if test="TYPE != null">
+				<choose>
+					<when test="TYPE == 0">AND PASS_STATUS = 0</when>
+					<when test="TYPE == 1">AND PASS_STATUS = 1</when>
+					<when test="TYPE == 2">AND PASS_STATUS > -1</when>
+				</choose>		
+			</if>
+			<if test="PAY_NO != NULL">AND PAY_NO=#{PAY_NO}</if>
+			<if test="MEM_NO != NULL">AND b.MEM_NO=#{MEM_NO}</if>
+	</select>
+	
+	
+	
+	
+	<insert id="payInsert" parameterType="list">
+		INSERT INTO PAY(PAY_NO, ORDER_NO, PAY_TYPE, PAY_PRICE, PAY_STATUS)
+		SELECT A.* FROM(
+		<foreach item="item" collection="list" separator="UNION ALL ">
+			SELECT 
+				#{item.PAY_NO} AS PAY_NO,			
+				#{item.ORDER_NO} AS ORDER_NO,
+				#{item.PAY_TYPE} AS PAY_TYPE,
+				#{item.PROD_PRICE} AS PAY_PRICE,
+				1 AS PAY_STATUS 
+			from dual
+		</foreach>
+		) A
+	</insert>
+
+
+	
+	
+	<insert id="passInsert" parameterType="list">
+		INSERT INTO PASS(PASS_NO, ORDER_NO, MEM_NO, PASS_SDAY, PASS_EDAY, PASS_STATUS, PASS_TYPE, PASS_CNT)
+		SELECT PASS_SEQ.NEXTVAL AS PASS_NO, A.* FROM(
+		<foreach item="item" collection="list" separator="UNION ALL ">
+			select 
+				#{item.ORDER_NO} AS ORDER_NO,
+				#{item.MEM_NO} AS MEM_NO,
+				#{item.PASS_SDAY} AS PASS_SDAY,
+				#{item.PASS_EDAY} AS PASS_EDAY,
+				#{item.PASS_STATUS} AS PASS_STATUS,
+				#{item.PROD_TYPE} AS PASS_TYPE,				
+				<choose>
+					<when test = "item.PROD_TYPE==1">
+						#{item.PROD_AMOUNT} AS PASS_CNT
+					</when>
+					<otherwise>
+						0 AS PASS_CNT
+					</otherwise>
+				</choose>
+			from dual
+		</foreach>
+		) A
+	</insert>
+	
+	
+	
+	<update id="passTransferFrozen" parameterType="map"> 
+		UPDATE PASS
+			SET PASS_STATUS = -2
+		WHERE PASS_NO = #{PASS_NO}
+	</update>
+	
+		
+	
+	<insert id="passTransferInsert" parameterType="map" useGeneratedKeys="true" keyColumn="PASS_NO" keyProperty="PASS_NO">
+		INSERT INTO PASS(PASS_NO, ORDER_NO, MEM_NO, PASS_SDAY, PASS_EDAY, PASS_STATUS, PASS_TYPE, PASS_CNT)
+		VALUES (PASS_SEQ.NEXTVAL, #{ORDER_NO}, #{TRANS_MEM_NO}, #{PASS_SDAY}, #{PASS_EDAY}, 1, #{PASS_TYPE}, #{PASS_CNT})
+	</insert>
+	
+	
+	
+	<insert id="transferInsert" parameterType="map">
+		INSERT INTO TRANSFER(TRANS_NO, PASS_NO, TRANSB_BNO)
+		VALUES (TRANSFER_SEQ.NEXTVAL, #{PASS_NO}, #{BNO})
+	</insert>
+	
+	
+		
+	
+	
+	
+	<select id="passList" parameterType="map" resultType="map">
+		SELECT 
+			PROD_NAME, PASS_CNT, PASS_SDAY, PASS_EDAY, a.MEM_NO, PAY_NO, a.ORDER_NO, PAY_PRICE, PAY_DATE, PASS_NO, PASS_TYPE, PASS_STATUS
+		FROM 
+            PASS a 
+            LEFT JOIN ORDERS b ON (a.ORDER_NO = b.ORDER_NO) 
+            LEFT JOIN PAY c ON (a.ORDER_NO = c.ORDER_NO)
+            LEFT JOIN PRODUCT d on (d.PROD_NO = b.PROD_NO)
+		WHERE 
+			ORDER_STATUS = 1 
+			<if test="TYPE != null">
+				<choose>
+					<when test="TYPE == 0">AND PASS_STATUS = 0</when>
+					<when test="TYPE == 1">AND PASS_STATUS = 1</when>
+					<when test="TYPE == 2">AND PASS_STATUS > -1</when>
+				</choose>		
+			</if>
+			<if test="PASS_NO != NULL">AND PASS_NO=#{PASS_NO}</if>
+			<if test="MEM_NO != NULL">AND a.MEM_NO=#{MEM_NO}</if>
+	</select>
+	
+	
+	
+	
+	
+	
+	
+</mapper>
+

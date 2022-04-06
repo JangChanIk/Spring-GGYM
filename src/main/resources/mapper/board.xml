@@ -1,0 +1,644 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kh.phoenix.board">
+
+
+<!-- ============================================================================================================ -->
+
+ 	
+	 <update id="boardHit" parameterType="map">
+		<choose>
+			<when test='id.equals("notice")||id.equals("faq")'>
+				UPDATE MASTER_BOARD SET MASTER_HIT = MASTER_HIT+1
+				WHERE MASTER_BNO = #{BNO}
+			</when>
+			<when test='id.equals("trans")'>
+				UPDATE TRANSFER_BOARD SET TRANSB_HIT = TRANSB_HIT+1
+				WHERE TRANSB_BNO = #{BNO}
+			</when>
+			<when test='id.equals("qna")'>
+				UPDATE QNA_BOARD SET QNA_HIT = QNA_HIT+1
+				WHERE QNA_BNO = #{BNO}
+			</when>
+			<when test='id.equals("review")'>
+				UPDATE REVIEW_BOARD SET REVIEW_HIT = REVIEW_HIT+1
+				WHERE REVIEW_BNO = #{BNO}
+			</when>
+		</choose>
+	</update>
+	
+	
+	<select id="getRowNum" parameterType="map" resultType="map">
+		SELECT NVL(MAX(ROWNUM),0) AS RNO FROM 
+		<choose>
+			<when test='id.equals("notice")||id.equals("faq")'>
+				MASTER_BOARD a LEFT JOIN MEMBER b ON (a.MEM_NO = b.MEM_NO)
+				WHERE MASTER_DELDATE = '0' AND
+				<choose>
+					<when test='id.equals("notice")'>
+						MASTER_TYPE=0
+					</when>
+					<when test='id.equals("faq")'>
+						MASTER_TYPE=1
+					</when>
+				</choose>
+				<if test="content!=null">
+					<choose>
+						<when test='condition.equals("작성자")'>
+							AND (MEM_NICKNAME LIKE '%'||#{content}||'%')
+						</when>
+						<when test='condition.equals("제목")'>
+							AND (MASTER_TITLE LIKE '%'||#{content}||'%')
+						</when>
+						<when test='condition.equals("내용")'>
+							AND (MASTER_CONTENT LIKE '%'||#{content}||'%')
+						</when>
+					</choose>
+				</if>
+			</when>
+			<when test='id.equals("trans")'>
+				TRANSFER_BOARD a 
+                LEFT JOIN PASS b ON (a.PASS_NO = b.PASS_NO)
+                LEFT JOIN MEMBER c ON (b.MEM_NO = c.MEM_NO)
+				WHERE TRANSB_DELDATE = '0'
+				<if test="content!=null">
+					<choose>
+						<when test='condition.equals("작성자")'>
+							AND (MEM_NICKNAME LIKE '%'||#{content}||'%')
+						</when>
+						<when test='condition.equals("제목")'>
+							AND (TRANSB_TITLE LIKE '%'||#{content}||'%')
+						</when>
+						<when test='condition.equals("내용")'>
+							AND (TRANSB_CONTENT LIKE '%'||#{content}||'%')
+						</when>
+					</choose>
+				</if>
+			</when>
+			<when test='id.equals("qna")'>
+				QNA_BOARD a LEFT JOIN MEMBER b ON (a.MEM_NO = b.MEM_NO)
+				WHERE QNA_DELDATE = '0'
+				<if test="content!=null">
+					<choose>
+						<when test='condition.equals("작성자")'>
+							AND (MEM_NICKNAME LIKE '%'||#{content}||'%')
+						</when>
+						<when test='condition.equals("제목")'>
+							AND (QNA_TITLE LIKE '%'||#{content}||'%')
+						</when>
+						<when test='condition.equals("내용")'>
+							AND (QNA_CONTENT LIKE '%'||#{content}||'%')
+						</when>
+					</choose>
+				</if>
+			</when>
+			<when test='id.equals("review")'>
+				REVIEW_BOARD a LEFT JOIN MEMBER b ON (a.MEM_NO = b.MEM_NO)
+				WHERE REVIEW_DELDATE = '0'
+				<if test="content!=null">
+					<choose>
+						<when test='condition.equals("작성자")'>
+							AND (MEM_NICKNAME LIKE '%'||#{content}||'%')
+						</when>
+						<when test='condition.equals("제목")'>
+							AND (REVIEW_TITLE LIKE '%'||#{content}||'%')
+						</when>
+						<when test='condition.equals("내용")'>
+							AND (REVIEW_CONTENT LIKE '%'||#{content}||'%')
+						</when>
+					</choose>
+				</if>
+			</when>
+		</choose>
+	</select>
+	
+	
+		
+	<update id="boardDelete" parameterType="map">
+		<choose>
+			<when test='id.equals("notice")||id.equals("faq")'>
+				UPDATE MASTER_BOARD SET MASTER_DELDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+				WHERE MASTER_BNO = #{BNO}
+			</when>
+			<when test='id.equals("trans")'>
+				UPDATE TRANSFER_BOARD SET TRANSB_DELDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+				WHERE TRANSB_BNO = #{BNO}
+			</when>
+			<when test='id.equals("qna")'>
+				UPDATE QNA_BOARD SET QNA_DELDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+				WHERE QNA_BNO = #{BNO}
+			</when>
+			<when test='id.equals("review")'>
+				UPDATE REVIEW_BOARD SET REVIEW_DELDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+				WHERE REVIEW_BNO = #{BNO}
+			</when>
+		</choose>
+	</update>
+	
+	
+	
+	
+	<!-- ======================================================================================================= -->
+	
+	 <select id="masterList" parameterType="map" resultType="map">
+		SELECT *
+		FROM (SELECT A.*, ROWNUM AS RNUM
+			FROM ( SELECT ROWNUM,
+				c.MASTER_BNO as "FILE",
+				a.MASTER_BNO,
+				MASTER_TITLE,
+				MASTER_CONTENT,
+				MASTER_HIT,
+				MEM_NICKNAME,
+				a.MEM_NO,
+				MASTER_DATE
+			FROM  MASTER_BOARD a LEFT JOIN MEMBER b ON (a.MEM_NO = b.MEM_NO)
+			LEFT JOIN (SELECT MASTER_BNO FROM GYM_FILE GROUP BY MASTER_BNO) c ON (a.MASTER_BNO = c.MASTER_BNO)
+			<trim prefix="WHERE" prefixOverrides="AND">
+				<choose>
+					<when test='id.equals("notice")'>
+						MASTER_TYPE=0
+					</when>
+					<when test='id.equals("faq")'>
+						MASTER_TYPE=1
+					</when>
+				</choose>
+				<if test="content!=null">
+					<choose>
+						<when test='condition.equals("작성자")'>
+							AND (MEM_NICKNAME LIKE '%'||#{content}||'%')
+						</when>
+						<when test='condition.equals("제목")'>
+							AND (MASTER_TITLE LIKE '%'||#{content}||'%')
+						</when>
+						<when test='condition.equals("내용")'>
+							AND (MASTER_CONTENT LIKE '%'||#{content}||'%')
+						</when>
+					</choose>
+				</if>
+				<if test="MEM_NO!=null">AND a.MEM_NO=#{MEM_NO}</if>
+			</trim>
+			AND MASTER_DELDATE = '0'
+			ORDER BY MASTER_BNO DESC) A)
+		<![CDATA[ WHERE RNUM > ((#{page}-1)*10) AND RNUM <= (#{page}*10) ]]>
+	</select>
+	
+
+	
+	<insert id="masterInsert" parameterType="map" useGeneratedKeys="true" keyColumn="MASTER_BNO" keyProperty="BNO">
+		INSERT INTO 			
+			MASTER_BOARD 
+		(MASTER_BNO, MEM_NO, MASTER_TITLE, MASTER_CONTENT, MASTER_TYPE)
+		VALUES(
+			MASTER_BOARD_SEQ.NEXTVAL , #{MEM_NO}, #{MASTER_TITLE}, #{MASTER_CONTENT},
+			<choose>
+				<when test='id.equals("notice")'>
+					0
+				</when>
+				<when test='id.equals("faq")'>
+					1
+				</when>
+			</choose>
+		)
+	</insert>
+	
+	
+	
+	<select id="masterDetail" parameterType="map" resultType="map">
+		SELECT
+		     MASTER_TITLE, MASTER_CONTENT, MASTER_HIT, MEM_NICKNAME, a.MEM_NO, MASTER_DATE, MASTER_BNO  
+		FROM
+		    MASTER_BOARD a LEFT JOIN MEMBER b ON(a.MEM_NO = b.MEM_NO)
+		WHERE
+			MASTER_BNO=#{BNO}
+		AND
+			MASTER_DELDATE = '0'
+	</select>
+	
+	
+	
+	<update id="masterUpdate" parameterType="map">
+		UPDATE 		
+			MASTER_BOARD 
+		SET
+			MASTER_TITLE = #{MASTER_TITLE},
+			MASTER_CONTENT = #{MASTER_CONTENT},
+			MASTER_UPDDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+		WHERE 
+			MASTER_BNO = #{BNO}
+	</update>
+	
+	
+	<!-- ================================================================================================ -->
+	
+	
+	<select id="qnaList" parameterType="map" resultType="map">
+		SELECT *
+		FROM (SELECT A.*, ROWNUM AS RNUM
+			FROM ( SELECT ROWNUM, COMM_NO, c.QNA_BNO AS "FILE", a.MEM_NO AS MEM_NO, MEM_NICKNAME,
+				a.QNA_BNO, QNA_TITLE, QNA_HIT, QNA_SECRET, QNA_TYPE, QNA_STATUS, QNA_DATE
+			FROM  QNA_BOARD a 
+                LEFT JOIN MEMBER b ON (a.MEM_NO = b.MEM_NO)
+                LEFT JOIN (SELECT QNA_BNO FROM GYM_FILE GROUP BY QNA_BNO) c ON (a.QNA_BNO = c.QNA_BNO)
+                LEFT JOIN (SELECT COUNT(COMM_NO) as COMM_NO, QNA_BNO FROM QNA_COMMENT WHERE QC_DELDATE = '0' GROUP BY QNA_BNO) d 
+                ON (a.QNA_BNO = d.QNA_BNO)
+			WHERE
+				QNA_DELDATE = '0'
+			<if test='QNA_TYPE!=null and !QNA_TYPE.equals("전체")'>AND QNA_TYPE = #{QNA_TYPE}</if>
+			<if test="MEM_NO!=null">AND a.MEM_NO=#{MEM_NO}</if>
+			<if test="content!=null">
+				<choose>
+					<when test='condition.equals("작성자")'>
+						AND (MEM_NICKNAME LIKE '%'||#{content}||'%')
+					</when>
+					<when test='condition.equals("제목")'>
+						AND (QNA_TITLE LIKE '%'||#{content}||'%')
+					</when>
+					<when test='condition.equals("내용")'>
+						AND (QNA_CONTENT LIKE '%'||#{content}||'%')
+					</when>
+				</choose>
+			</if>
+			ORDER BY QNA_BNO DESC) A)
+		<![CDATA[ WHERE RNUM > ((#{page}-1)*10) AND RNUM <= (#{page}*10) ]]>
+	</select>
+	
+
+	
+	<insert id="qnaInsert" parameterType="map" useGeneratedKeys="true" keyColumn="QNA_BNO" keyProperty="BNO">
+		INSERT INTO 			
+			QNA_BOARD (QNA_BNO, MEM_NO, QNA_TITLE, QNA_CONTENT, QNA_TYPE, QNA_SECRET)
+		VALUES(
+			QNA_BOARD_SEQ.NEXTVAL , #{MEM_NO}, #{QNA_TITLE}, #{QNA_CONTENT}, #{QNA_TYPE}, #{QNA_SECRET}
+		)
+	</insert>
+	
+	
+	
+	<select id="qnaDetail" parameterType="map" resultType="map">
+		SELECT
+		     QNA_TITLE, QNA_CONTENT, QNA_HIT, MEM_NICKNAME, a.MEM_NO, QNA_DATE, QNA_BNO, QNA_SECRET, QNA_TYPE
+		FROM
+		    QNA_BOARD a LEFT JOIN MEMBER b ON(a.MEM_NO = b.MEM_NO)
+		WHERE
+			QNA_BNO=#{BNO}
+		AND
+			QNA_DELDATE = '0'
+	</select>
+	
+	
+	
+	<update id="qnaUpdate" parameterType="map">
+		UPDATE 		
+			QNA_BOARD 
+		SET
+			QNA_TITLE = #{QNA_TITLE},
+			QNA_CONTENT = #{QNA_CONTENT},
+			QNA_TYPE = #{QNA_TYPE},
+			QNA_SECRET = #{QNA_SECRET},
+			QNA_UPDDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+		WHERE 
+			QNA_BNO = #{BNO}
+	</update>
+	
+	
+	<!-- ======================================================================================================= -->
+	
+	
+		<select id="transList" parameterType="map" resultType="map">
+		SELECT *
+		FROM (SELECT A.*, ROWNUM AS RNUM
+			FROM ( SELECT ROWNUM, COMM_NO, b.MEM_NO, MEM_NICKNAME ,
+				a.TRANSB_BNO, TRANSB_TITLE, TRANSB_CONTENT, TRANSB_HIT, TRANSB_STATUS, TRANSB_DATE, PASS_TYPE
+			FROM  TRANSFER_BOARD a 
+                LEFT JOIN PASS b ON (a.PASS_NO = b.PASS_NO)
+                LEFT JOIN MEMBER c ON (b.MEM_NO = c.MEM_NO)
+                LEFT JOIN (SELECT COUNT(COMM_NO) as COMM_NO, TRANSB_BNO FROM TRANSFER_COMMENT WHERE TC_DELDATE = '0' GROUP BY TRANSB_BNO) d 
+                ON (a.TRANSB_BNO = d.TRANSB_BNO)
+			WHERE
+				TRANSB_DELDATE = '0'
+			<if test='pass_type!=null and !pass_type.equals("전체")'>
+				<choose>
+					<when test='pass_type.equals("헬스회원권")'>
+						AND PASS_TYPE = 0
+					</when>
+					<when test='pass_type.equals("수업횟수권")'>
+						AND PASS_TYPE = 1
+					</when>
+				</choose>
+			</if>
+			<if test="MEM_NO!=null">AND b.MEM_NO=#{MEM_NO}</if>
+			<if test="content!=null">
+				<choose>
+					<when test='condition.equals("작성자")'>
+						AND (MEM_NICKNAME LIKE '%'||#{content}||'%')
+					</when>
+					<when test='condition.equals("제목")'>
+						AND (TRANSB_TITLE LIKE '%'||#{content}||'%')
+					</when>
+					<when test='condition.equals("내용")'>
+						AND (TRANSB_CONTENT LIKE '%'||#{content}||'%')
+					</when>
+				</choose>
+			</if>
+			ORDER BY TRANSB_BNO DESC) A)
+		<![CDATA[ WHERE RNUM > ((#{page}-1)*10) AND RNUM <= (#{page}*10) ]]>
+	</select>
+	
+
+	
+	<insert id="transInsert" parameterType="map" useGeneratedKeys="true">
+		INSERT INTO 			
+			TRANSFER_BOARD (TRANSB_BNO, PASS_NO, TRANSB_TITLE, TRANSB_CONTENT)
+		VALUES
+			(TRANSFER_BOARD_SEQ.NEXTVAL, #{PASS_NO}, #{TRANSB_TITLE}, #{TRANSB_CONTENT})
+	</insert>
+	
+	
+	
+	<select id="transDetail" parameterType="map" resultType="map">
+		SELECT
+		     MEM_NICKNAME, b.MEM_NO, PROD_NAME, TRANSB_STATUS,
+		     TRANSB_BNO, TRANSB_TITLE, TRANSB_CONTENT, TRANSB_HIT, TRANSB_DATE, 
+		     a.PASS_NO, PASS_SDAY, PASS_EDAY, PASS_CNT, PASS_TYPE
+		FROM
+		    TRANSFER_BOARD a 
+		    LEFT JOIN PASS b ON(a.PASS_NO = b.PASS_NO)
+		    LEFT JOIN MEMBER c ON(b.MEM_NO = c.MEM_NO)
+		    LEFT JOIN ORDERS e ON (b.ORDER_NO = e.ORDER_NO)
+            LEFT JOIN PRODUCT f ON (e.PROD_NO = f.PROD_NO)
+		WHERE TRANSB_BNO=#{BNO}
+		AND TRANSB_DELDATE = '0'
+	</select>
+	
+	
+	
+	<update id="transUpdate" parameterType="map">
+		UPDATE 		
+			TRANSFER_BOARD 
+		<set>
+			<if test="TRANSB_STATUS!=null">TRANSB_STATUS = 1,</if> 
+			<if test="TRANSB_TITLE!=null">TRANSB_TITLE = #{TRANSB_TITLE},</if> 
+			<if test="TRANSB_CONTENT!=null">TRANSB_CONTENT = #{TRANSB_CONTENT},</if>
+			TRANSB_UPDDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')		
+		</set>
+		WHERE 
+			PASS_NO = #{PASS_NO}
+	</update>
+	
+	
+	<!-- ======================================================================================================= -->
+	
+	<select id="reviewList" parameterType="map" resultType="map">
+		SELECT *
+		FROM (SELECT A.*, ROWNUM AS RNUM
+			FROM ( SELECT ROWNUM, COMM_NO, c.REVIEW_BNO AS "FILE", a.MEM_NO AS MEM_NO, MEM_NICKNAME,
+				a.REVIEW_BNO, REVIEW_TITLE, REVIEW_HIT, REVIEW_DATE
+			FROM  REVIEW_BOARD a 
+                LEFT JOIN MEMBER b ON (a.MEM_NO = b.MEM_NO)
+                LEFT JOIN (SELECT REVIEW_BNO FROM GYM_FILE GROUP BY REVIEW_BNO) c ON (a.REVIEW_BNO = c.REVIEW_BNO)
+                LEFT JOIN (SELECT COUNT(COMM_NO) as COMM_NO, REVIEW_BNO FROM REVIEW_COMMENT WHERE RC_DELDATE = '0' GROUP BY REVIEW_BNO) d 
+                ON (a.REVIEW_BNO = d.REVIEW_BNO)
+			WHERE
+				REVIEW_DELDATE = '0'
+			<if test="MEM_NO!=null">AND a.MEM_NO=#{MEM_NO}</if>
+			<if test="content!=null">
+				<choose>
+					<when test='condition.equals("작성자")'>
+						AND (MEM_NICKNAME LIKE '%'||#{content}||'%')
+					</when>
+					<when test='condition.equals("제목")'>
+						AND (REVIEW_TITLE LIKE '%'||#{content}||'%')
+					</when>
+					<when test='condition.equals("내용")'>
+						AND (REVIEW_CONTENT LIKE '%'||#{content}||'%')
+					</when>
+				</choose>
+			</if>
+			ORDER BY REVIEW_BNO DESC) A)
+		<![CDATA[ WHERE RNUM > ((#{page}-1)*10) AND RNUM <= (#{page}*10) ]]>
+	</select>
+	
+
+	
+	<insert id="reviewInsert" parameterType="map" useGeneratedKeys="true" keyColumn="REVIEW_BNO" keyProperty="BNO">
+		INSERT INTO 			
+			REVIEW_BOARD (REVIEW_BNO, MEM_NO, REVIEW_TITLE, REVIEW_CONTENT)
+		VALUES
+			(REVIEW_BOARD_SEQ.NEXTVAL, #{MEM_NO}, #{REVIEW_TITLE}, #{REVIEW_CONTENT})
+	</insert>
+	
+	
+	
+	<select id="reviewDetail" parameterType="map" resultType="map">
+		SELECT
+		     MEM_NICKNAME, b.MEM_NO,
+		     REVIEW_BNO, REVIEW_TITLE, REVIEW_CONTENT, REVIEW_HIT, REVIEW_DATE
+		FROM
+		    REVIEW_BOARD a 
+		    LEFT JOIN MEMBER b ON(a.MEM_NO = b.MEM_NO)
+		WHERE REVIEW_BNO=#{BNO}
+		AND REVIEW_DELDATE = '0'
+	</select>
+	
+	
+	
+	<update id="reviewUpdate" parameterType="map">
+		UPDATE 		
+			REVIEW_BOARD 
+		<set>
+			<if test="REVIEW_TITLE!=null">REVIEW_TITLE = #{REVIEW_TITLE},</if> 
+			<if test="REVIEW_CONTENT!=null">REVIEW_CONTENT = #{REVIEW_CONTENT},</if>
+			REVIEW_UPDDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')		
+		</set>
+		WHERE 
+			MEM_NO = #{MEM_NO}
+	</update>
+	
+	<!-- ======================================================================================================= -->
+	
+	
+	
+	<update id="commentDelete" parameterType="map">
+		UPDATE 
+		<choose>
+			<when test='id.equals("trans")'>
+				TRANSFER_COMMENT SET TC_DELDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+			</when>
+			<when test='id.equals("qna")'>
+				QNA_COMMENT SET QC_DELDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+			</when>
+			<when test='id.equals("review")'>
+				REVIEW_COMMENT SET RC_DELDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+			</when>
+		</choose>
+			WHERE COMM_NO = #{CNO}
+	</update>
+	
+	
+	<update id="commentUpdate" parameterType="map">
+		UPDATE 
+		<choose>
+			<when test='id.equals("qna")'>
+					QNA_COMMENT 
+				SET 
+					QC_WRITER = #{QC_WRITER},
+					QC_COMMENT = #{QC_COMMENT},
+					QC_UPDDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+			</when>
+			<when test='id.equals("trans")'>
+					TRANSFER_COMMENT 
+				SET 
+					TC_COMMENT = #{TC_COMMENT},
+					TC_UPDDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+			</when>
+			<when test='id.equals("review")'>
+					REVIEW_COMMENT 
+				SET 
+					RC_COMMENT = #{RC_COMMENT},
+					RC_UPDDATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS')
+			</when>
+		</choose>
+			WHERE COMM_NO = #{CNO}
+	</update>
+	
+	
+	<insert id="commentInsert" parameterType="map">
+		<choose>
+			<when test='id.equals("qna")'>
+			INSERT INTO QNA_COMMENT ( COMM_NO, QNA_BNO, QC_WRITER, QC_COMMENT )
+					VALUES
+				( (SELECT NVL(MAX(COMM_NO), 0) + 1 FROM QNA_COMMENT a
+					LEFT JOIN QNA_BOARD b ON (a.QNA_BNO = b.QNA_BNO)
+					WHERE a.QNA_BNO = #{BNO}), #{BNO}, #{QC_WRITER}, #{QC_COMMENT} )
+			</when>
+			<when test='id.equals("trans")'>
+			INSERT INTO TRANSFER_COMMENT ( COMM_NO, TRANSB_BNO, TC_WRITER, TC_COMMENT )
+					VALUES
+				( (SELECT NVL(MAX(COMM_NO), 0) + 1 FROM TRANSFER_COMMENT a
+					LEFT JOIN TRANSFER_BOARD b ON (a.TRANSB_BNO = b.TRANSB_BNO)
+					WHERE a.TRANSB_BNO = #{BNO}), #{BNO}, #{TC_WRITER}, #{TC_COMMENT} )
+			</when>
+			<when test='id.equals("review")'>
+			INSERT INTO REVIEW_COMMENT ( COMM_NO, REVIEW_BNO, RC_WRITER, RC_COMMENT )
+					VALUES
+				( (SELECT NVL(MAX(COMM_NO), 0) + 1 FROM REVIEW_COMMENT a
+					LEFT JOIN REVIEW_BOARD b ON (a.REVIEW_BNO = b.REVIEW_BNO)
+					WHERE a.REVIEW_BNO = #{BNO}), #{BNO}, #{RC_WRITER}, #{RC_COMMENT} )
+			</when>
+		</choose>
+	</insert>
+	
+	
+
+	
+	<select id="commentList" parameterType="map" resultType="map">
+		<choose>
+			<when test='id.equals("qna")'>
+				SELECT COMM_NO, QC_WRITER, QC_COMMENT, QC_DATE, MEM_NO
+				FROM QNA_COMMENT a LEFT JOIN MEMBER b ON(a.QC_WRITER = b.MEM_NICKNAME)
+				WHERE QNA_BNO=#{BNO} AND QC_DELDATE = '0'
+			</when>
+			<when test='id.equals("trans")'>
+				SELECT COMM_NO, TC_WRITER, TC_COMMENT, TC_DATE, MEM_NO
+				FROM TRANSFER_COMMENT a LEFT JOIN MEMBER b ON(a.TC_WRITER = b.MEM_NICKNAME)
+				WHERE TRANSB_BNO=#{BNO} AND TC_DELDATE = '0'
+			</when>
+			<when test='id.equals("review")'>
+				SELECT COMM_NO, RC_WRITER, RC_COMMENT, RC_DATE, MEM_NO
+				FROM REVIEW_COMMENT a LEFT JOIN MEMBER b ON(a.RC_WRITER = b.MEM_NICKNAME)
+				WHERE REVIEW_BNO=#{BNO} AND RC_DELDATE = '0'
+			</when>
+		</choose>
+			ORDER BY COMM_NO DESC
+	</select>
+	
+	
+	
+	
+
+
+
+
+<!-- ============================================================================================================ -->
+
+
+	<select id="fileList" parameterType="map" resultType="map">
+		SELECT
+			FILE_NAME
+		FROM
+		    GYM_FILE 
+		WHERE
+			<choose>
+				<when test='id.equals("notice") or id.equals("faq")'>
+					MASTER_BNO=#{BNO}
+				</when>
+				<when test='id.equals("qna")'>
+					QNA_BNO=#{BNO}
+				</when>
+				<when test='id.equals("review")'>
+					REVIEW_BNO=#{BNO}
+				</when>
+			</choose>
+		AND BOARD_TYPE != -1	
+	</select>
+	
+	
+	<insert id="fileInsert" parameterType="map">
+		INSERT INTO 
+			GYM_FILE
+			(FILE_NO, FILE_PATH, FILE_NAME, FILE_SIZE)
+		VALUES
+			(GYM_FILE_SEQ.NEXTVAL, #{FILE_PATH}, #{FILE_NAME}, #{FILE_SIZE})
+	</insert>
+	
+	
+	<update id="fileUpdate" parameterType="list">
+		<foreach collection="list" item="item" separator=";" open="DECLARE BEGIN" close="; END;">
+			UPDATE 
+				GYM_FILE
+			SET
+				BOARD_TYPE = 0,
+				<choose>
+					<when test='item.id.equals("notice") or item.id.equals("faq")'>
+						MASTER_BNO=#{item.BNO}
+					</when>
+					<when test='item.id.equals("qna")'>
+						QNA_BNO=#{item.BNO}
+					</when>
+					<when test='item.id.equals("review")'>
+						REVIEW_BNO=#{item.BNO}
+					</when>
+				</choose>
+			WHERE
+				FILE_NAME = #{item.FILE_NAME}
+		</foreach>
+	</update>
+	
+	
+	
+	<update id="fileDelete" parameterType="map">
+		UPDATE 
+			GYM_FILE
+		SET
+			BOARD_TYPE = -1
+		WHERE
+			<choose>
+				<when test='id.equals("notice") or id.equals("faq")'>
+					MASTER_BNO=#{BNO}
+				</when>
+				<when test='id.equals("qna")'>
+					QNA_BNO=#{BNO}
+				</when>
+				<when test='id.equals("review")'>
+					REVIEW_BNO=#{BNO}
+				</when>
+			</choose>
+	</update>
+	
+	
+	
+	
+</mapper>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kh.phoenix.class">
+<!-- 스케쥴 관련[schedule] -->
+	<select id="scheduleList" parameterType="map" resultType="map"> <!-- 스케쥴 리스트 -->
+		SELECT * FROM schedule
+	</select>
+	
+	<insert id="scheduleInsert" parameterType="map"> <!-- 스케쥴 추가 -->
+		INSERT INTO schedule(sch_no, sch_time)
+        VALUES(schedule_seq.NEXTVAL, #{sch_time})
+	</insert>
+	
+	<update id="scheduleUpdate" parameterType="map"> <!-- 스케쥴 변경 -->
+		UPDATE schedule
+        SET sch_time = #{sch_time}
+   		WHERE sch_no = #{sch_no}
+ 	</update>
+
+	<delete id="scheduleDelete" parameterType="map"> <!-- 스케쥴 삭제 -->
+	 	DELETE FROM schedule WHERE sch_no = #{sch_no}
+	</delete>
+
+<!-- 수업 관련[class] -->
+	<select id="classList" parameterType="map" resultType="map"> <!-- 전체적인 수업 내역 조회 & 예약 가능한 수업 조회 -->
+		SELECT cls_type, cls_info, mem_name, sch_time, cls_maxcnt, cls_cnt, cls_sday, cls_status
+	 	FROM class x JOIN member y
+	            ON x.mem_no = y.mem_no
+	                JOIN schedule z
+	            ON x.sch_no = z.sch_no
+		<if test="cls_status != null">WHERE cls_status=#{cls_status}</if>
+	</select>
+	
+	
+	<select id="classListTDetail" parameterType="map" resultType="map"> <!-- 수업 상세 조회 -->
+      SELECT cls_type, cls_info, cls_sday, cls_cnt, cls_maxcnt, cls_status, b.mem_name <!-- 여기서 mem.name은 예약 회원 name -->
+        FROM class x JOIN appointment y 
+          ON x.cls_no = y.cls_no
+                     JOIN pass z
+          ON y.pass_no = z.pass_no
+                     JOIN member b
+            ON z.mem_no = b.mem_no
+       WHERE x.cls_no = #{cls_no}
+	</select>
+	
+	<select id="reservationMem" parameterType="map" resultType="map"> <!-- 예약 회원 내역 조회 -->
+        SELECT s.sch_time, c.cls_info, m.mem_name
+        FROM appointment appt
+        JOIN class c
+            ON appt.cls_no = c.cls_no
+        JOIN schedule s
+            ON c.sch_no = s.sch_no
+        JOIN pass p
+            ON appt.pass_no = p.pass_no
+        JOIN member m
+            ON p.mem_no = m.mem_no
+        WHERE appt.cls_no = #{cls_no}
+	</select>
+	
+	<insert id="classInsert" parameterType="map"> <!-- 수업 등록 -->
+		INSERT INTO CLASS(
+			cls_no, mem_no, sch_no, cls_type, cls_info,
+			cls_maxcnt, cls_cnt, cls_sday, cls_status
+		)
+		VALUES(class_seq.NEXTVAL,#{mem_no},#{sch_no},#{cls_type},#{cls_info},
+			   #{cls_maxcnt},0,#{cls_sday},#{cls_status})
+	</insert>
+	
+	<update id="classUpdate" parameterType="map"> <!-- 수업 정보 수정 -->
+		UPDATE class 
+			<set>
+				<if test="mem_no != null">mem_no=#{mem_no},</if>
+				<if test="sch_no != null">sch_no=#{sch_no},</if>
+				<if test="cls_type != null">cls_type=#{cls_type},</if>
+				<if test="cls_info != null">cls_info=#{cls_info},</if>
+				<if test="cls_maxcnt != null">cls_maxcnt=#{cls_maxcnt},</if>
+				<if test="cls_sday != null">cls_sday=#{cls_sday},</if>
+				<if test="cls_status != null">cls_status=#{cls_status},</if>
+			</set>
+		WHERE cls_no = #{cls_no}
+	</update>  
+	
+	<delete id="classDelete" parameterType="map"> <!-- 수업 정보 영구 삭제-->
+	 	DELETE FROM class WHERE cls_no = #{cls_no}
+	</delete>
+	
+<!-- 스케쥴 체크 -->
+	<select id="teacherSchedule" parameterType="map" resultType="map"> <!-- 강사 스케쥴 조회 -->
+	    SELECT cls_sday, y.sch_time, cls_info
+	        FROM class x JOIN schedule y
+	            ON x.sch_no = y.sch_no
+	        JOIN appointment c
+	            ON x.cls_no = c.cls_no
+	        JOIN member m
+	            ON x.mem_no = m.mem_no
+	    WHERE x.mem_no = #{mem_no}
+	    <if test="select_day != null">AND x.cls_sday = #{select_day}</if> <!-- 날짜 지정시 해당 날짜에 대한 스케쥴 정보 조회, 아직 test 못해봄 -->
+	</select>
+	
+	<select id="gymSchedule" parameterType="map" resultType="map"> <!-- 매장 스케쥴 정보 -->
+	    SELECT s.sch_time, c.cls_info, m.mem_name
+	    FROM schedule s JOIN class c
+	            ON s.sch_no = c.sch_no
+	        JOIN member m
+	            ON c.mem_no = m.mem_no
+	     <if test="select_day != null">AND c.cls_sday = #{select_day}</if> <!-- 날짜 지정시 해당 날짜에 대한 스케쥴 정보 조회, 아직 test 못해봄 -->
+	</select>
+
+
+</mapper>
