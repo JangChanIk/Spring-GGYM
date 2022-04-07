@@ -47,7 +47,7 @@ public class BoardController {
 		String filename = boardLogic.imageUpload(image);
 		logger.info(filename);
 		return filename;
-	}// end of boardList
+	}// end of imageUpload
 	
 	
 	@GetMapping("imageGet")
@@ -55,12 +55,12 @@ public class BoardController {
 		logger.info("imageGet 호출 성공");
 		byte[] fileArray = boardLogic.imageDownload(imageName);
 		return fileArray;
-	}// end of boardList
+	}// end of imageGet
 	
 	@GetMapping("imageDownload")
 	public ResponseEntity<Resource> imageDownload(@RequestParam(value="imageName") String imageName) {
 		logger.info("imageDownload 호출 성공");
-		String filePath = "C:\\JANG\\CODE\\Coding\\Workspace\\eclipse-workspace_eGov\\spring-phoenix\\src\\main\\webapp\\file"; // 절대경로.	
+		String filePath = "C:\\JANG\\CODE\\Coding\\Workspace\\Final-Project\\Spring-GGYM\\src\\main\\webapp\\file"; // 절대경로.	
 		try {
 		File file = new File(filePath,URLDecoder.decode(imageName, "UTF-8"));
 
@@ -86,7 +86,7 @@ public class BoardController {
 			return null;
 		}
 		
-	}// end of boardList
+	}// end of imageDownload
 	
 	
 	//===================================================================================
@@ -124,7 +124,7 @@ public class BoardController {
 		Gson g = new Gson();
 		String result = g.toJson(boardDetail);
 		return result;
-	}// end of boardList
+	}// end of boardDetail
 
 
 	

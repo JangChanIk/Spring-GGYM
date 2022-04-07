@@ -36,7 +36,7 @@ public class BoardLogic {
 	public String imageUpload(MultipartFile image) {
 		Map<String, Object> pMap = new HashMap<String, Object>();
 		logger.info("image:"+image);
-		String savePath =  "C:\\JANG\\CODE\\Coding\\Workspace\\eclipse-workspace_eGov\\spring-phoenix\\src\\main\\webapp\\file";
+		String savePath =  "C:\\JANG\\CODE\\Coding\\Workspace\\Final-Project\\Spring-GGYM\\src\\main\\webapp\\file";
 		String filename =  null;
 		String fullPath = null;
 
@@ -84,7 +84,7 @@ public class BoardLogic {
 		}
 		//out.print("b_file: 8->euc"+b_file);		
 		//out.print("<br>");		
-		String filePath = "C:\\JANG\\CODE\\Coding\\Workspace\\eclipse-workspace_eGov\\spring-phoenix\\src\\main\\webapp\\file"; // 절대경로.	
+		String filePath = "C:\\JANG\\CODE\\Coding\\Workspace\\Final-Project\\Spring-GGYM\\src\\main\\webapp\\file"; // 절대경로.	
 		//가져온 파일이름을 객체화 시켜줌. - 파일이 있는 물리적인 경로가 필요함.
 		File file = new File(filePath, fname.trim());
 	   	

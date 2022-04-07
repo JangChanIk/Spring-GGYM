@@ -17,6 +17,7 @@
 			<if test="MEM_NO!=null">AND MEM_NO = #{MEM_NO}</if>
 			<if test="MEM_TEL!=null">AND MEM_TEL = #{MEM_TEL}</if>
 		</trim> 
+		AND MEM_STATUS > -1
 	</select>
 
 
@@ -57,10 +58,11 @@
 	
 	
 	
-	<delete id="memberDelete" parameterType="map">  <!-- 회원 영구 삭제 -->
-		DELETE FROM MEMBER
+	<update id="memberDelete" parameterType="map">  <!-- 회원 상태 삭제 -->
+		UPDATE MEMBER SET MEM_STATUS = -1,
+		MEM_NICKNAME = '탈퇴'
 		WHERE MEM_NO = #{MEM_NO}
-	</delete> 
+	</update> 
 	
 	
 </mapper>

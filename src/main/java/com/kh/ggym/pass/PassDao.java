@@ -58,9 +58,14 @@ public class PassDao {
 		return Integer.parseInt(result.get("RESULT").toString());
 	}
 
-	public int passFrozen() {
+	public int passFrozen(Map<String, Object> map) {
 		logger.info("passFrozen 호출성공");
-		return sqlSession.update(NAMESPACE+"passFrozen");
+		return sqlSession.update(NAMESPACE+"passFrozen", map);
+	}
+
+	public int passUpdate(Map<String, Object> map) {
+		logger.info("passUpdate 호출성공");
+		return sqlSession.update(NAMESPACE+"passUpdate", map);
 	}
 
 	

@@ -7,7 +7,7 @@ target/
 # ignore properties file
 application.properties
 cert_key.p12
-/file/
+file/
 
 ### STS ###
 .apt_generated
